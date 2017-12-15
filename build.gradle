@@ -1,113 +1,22 @@
 buildscript {
+    ext {
+        support_version = '25.3.1'
+        kotlin_version = '1.1.4-3'
+        mockito_version = '2.9.0'
+        play_version = '10.0.1'
+    }
+
     repositories {
-        mavenCentral()
-
+        jcenter()
+        maven { url 'https://jitpack.io' }
     }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.7.+'
-        classpath 'com.github.jcandksolutions.gradle:android-unit-test:1.0.+'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.stanfy.spoon:spoon-gradle-plugin:1.2.2'
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.15.0'
+        classpath 'de.mobilej.unmock:UnMockPlugin:0.6.0'
+        classpath 'com.github.triplet.gradle:play-publisher:1.1.5'
     }
-}
-apply plugin: 'android'
-
-repositories {
-    mavenCentral()
-    maven {
-        url project.hasProperty('ligisMavenUrl') ? ligisMavenUrl : "https://raw.github.com/ligi/ligis-mvn-repo/master";
-    }
-}
-
-android {
-    compileSdkVersion 19
-    buildToolsVersion "19.0.1"
-
-    defaultConfig {
-        versionCode 210
-        versionName "2.1.0"
-        minSdkVersion 9
-        targetSdkVersion 19
-        packageName "org.ligi.passandroid"
-    }
-
-    buildTypes {
-        release {
-            runProguard false
-            proguardFile 'proguard-project.txt'
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
-    }
-
-    flavorGroups "maps", "analytics"
-    productFlavors {
-
-        withMaps {
-            flavorGroup "maps"
-        }
-
-        noMaps {
-            flavorGroup "maps"
-        }
-
-        withAnalytics {
-            flavorGroup "analytics"
-        }
-
-        noAnalytics {
-            flavorGroup "analytics"
-        }
-
-    }
-
-
-}
-
-
-apply plugin: 'android-unit-test'
-
-
-dependencies {
-    compile 'com.googlecode.android-query:android-query:0.25.+'
-    compile 'com.google.code.gson:gson:2.2.4'
-    compile 'org.ligi:tracedroid:1.1'
-    compile 'org.ligi:AXT:0.25'
-    compile 'org.ligi:AXT:0.24'
-    compile 'com.android.support:support-v4:19.0.0'
-    compile 'net.lingala.zip4j:zip4j:1.2.9'
-    compile 'com.android.support:appcompat-v7:19.0.0'
-    compile 'com.jakewharton:butterknife:4.0.1'
-    compile 'joda-time:joda-time:2.3'
-    compile 'com.google.android.gms:play-services:4.0.30'
-    compile 'com.squareup:otto:1.2.1'
-    compile 'com.github.chrisbanes.actionbarpulltorefresh:extra-abc:0.9.2'
-
-    // TODO watch progress at zxing - last official had problems with aztec format
-    // snapshot works - but switch back to official when available
-    compile fileTree(dir: 'libs', include: 'zxing-core-2.3.0-SNAPSHOT.jar')
-
-    testCompile 'junit:junit:4.10'
-    testCompile 'org.robolectric:robolectric:2.2'
-    testCompile 'org.easytesting:fest:1.0.15'
-    testCompile 'com.squareup:fest-android:1.0.7'
-
-    testCompile fileTree(dir: 'libs', include: 'core-2.3.0-SNAPSHOT.jar')
-    testCompile 'com.googlecode.android-query:android-query:0.25.+'
-    testCompile 'com.google.code.gson:gson:2.2.4'
-    testCompile 'org.ligi:tracedroid:1.1'
-    testCompile 'org.ligi:AXT:0.25'
-    testCompile 'com.android.support:support-v4:19.0.0'
-    testCompile 'com.android.support:appcompat-v7:19.0.0'
-
-    withAnalyticsCompile fileTree(dir: 'libs', include: 'libGoogleAnalyticsV2.jar')
-    withMapsCompile 'com.google.android.gms:play-services:4.0.30'
-}
-
-
-tasks.withType(Test) {
-    scanForTestClasses = false
-    include "**/*The*.class" // whatever Ant pattern matches your test class files
-    exclude '**/*$*' //exclude inner classes
 }

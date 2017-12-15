@@ -1,10 +1,11 @@
 .gradle
 build
 .idea
-assets
+#assets
 bin
 gen
-proguard-project.txt
 project.properties
-
+gradle.properties
+local.properties
+*iml
 
