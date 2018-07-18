@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.support.design.widget.Snackbar
+import android.support.v4.view.GravityCompat
 import android.support.v4.view.ViewPager
 import android.support.v7.app.ActionBarDrawerToggle
 import android.support.v7.app.AlertDialog
@@ -41,14 +42,11 @@ import permissions.dispatcher.OnNeverAskAgain
 import permissions.dispatcher.OnPermissionDenied
 import permissions.dispatcher.RuntimePermissions
 
+private const val OPEN_FILE_READ_REQUEST_CODE = 1000
+private const val VERSION_STARTING_TO_SUPPORT_STORAGE_FRAMEWORK = 19
+
 @RuntimePermissions
 class PassListActivity : PassAndroidActivity() {
-
-    companion object {
-        const val VERSION_STARTING_TO_SUPPORT_STORAGE_FRAMEWORK = 19
-    }
-
-    private val OPEN_FILE_READ_REQUEST_CODE = 1000
 
     private val drawerToggle by lazy { ActionBarDrawerToggle(this, drawer_layout, R.string.drawer_open, R.string.drawer_close) }
 
@@ -301,8 +299,11 @@ class PassListActivity : PassAndroidActivity() {
     }
 
     override fun onBackPressed() {
-        if (fam.isExpanded) fam.collapse()
-        else super.onBackPressed()
+        when {
+            drawer_layout.isDrawerOpen(GravityCompat.START) -> drawer_layout.closeDrawer(GravityCompat.START)
+            fam.isExpanded -> fam.collapse()
+            else -> super.onBackPressed()
+        }
     }
 
 }
