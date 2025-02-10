@@ -2,9 +2,9 @@
 <resources>
   <string name="app_name">PassAndroid</string>
   <string name="logo">logotipoa</string>
-  <string name="menu_map">mapan erakutsi</string>
-  <string name="menu_delete">ezabatu</string>
-  <string name="menu_share">partekatu</string>
+  <string name="menu_map">Mapan erakutsi</string>
+  <string name="menu_delete">Ezabatu</string>
+  <string name="menu_share">Partekatu</string>
   <string name="barcode">barra-kodea</string>
   <string name="help_label">Laguntza</string>
   <string name="drawer_open">ireki</string>
@@ -50,7 +50,7 @@
     </string>
   <string name="downloading_new_pass_version">pasearen bertsio berria deskargatzen</string>
   <string name="unzip_pass_dialog_title">Passbooka irekitzen</string>
-  <string name="unzip_pass_dialog_message">Mesedez itxaron...</string>
+  <string name="unzip_pass_dialog_message">Mesedez itxaron…</string>
   <string name="action_update">eguneratu</string>
   <string name="no_calendar_app_found">Ez da egutegi aplikaziorik aurkitu</string>
   <string name="pass_updated">Pasea eguneratu da</string>
@@ -65,9 +65,6 @@
   <string name="found__pass">Eta %d gehiago</string>
   <string name="scan_finished_dialog_title">Eskaneatzen amaitu da.</string>
   <string name="scan_finished_dialog_text">%d pase aurkitu dira</string>
-  <string name="scan_progressdialog_title">Bilatzen...</string>
-  <string name="scan_progressdialog_message">Mesedez itxaron.</string>
-  <string name="scan_dialog_send_background_button">atzealdea</string>
   <string name="emtytrash_label">hustu zakarrontzia</string>
   <string name="barcode_edit_hint_alternative_message">Mezu alternatiboa</string>
   <string name="barcode_edit_random">ausazkoa</string>
@@ -130,9 +127,8 @@
   <string name="field_source_pdf">PDF</string>
   <string name="field_note_pdf">Hau inportatutako PDF bat da, ez da benetako pase bat</string>
   <string name="nav_settings">Ezarpenak</string>
-  <string name="nav_github">Github</string>
+  <string name="nav_github">GitHub</string>
   <string name="nav_betatest_opt_in_out">Betatestean sartu/atera</string>
-  <string name="nav_community_on_google">Google+ komunitatea</string>
-  <string name="nav_improve_translation">Hobetu itzulpena</string>
+    <string name="nav_improve_translation">Hobetu itzulpena</string>
   <string name="launcher_shortcut">Abiarazlearen lasterbidea</string>
 </resources>

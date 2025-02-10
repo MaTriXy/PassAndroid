@@ -3,11 +3,16 @@ package org.ligi.passandroid.model
 import android.content.Context
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
-import okio.Okio
-import org.greenrobot.eventbus.EventBus
-import org.ligi.passandroid.App
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
+import kotlinx.coroutines.launch
+import okio.buffer
+import okio.sink
+import okio.source
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import org.ligi.passandroid.BuildConfig
-import org.ligi.passandroid.events.PassStoreChangeEvent
+import org.ligi.passandroid.Tracker
 import org.ligi.passandroid.model.pass.Pass
 import org.ligi.passandroid.model.pass.PassImpl
 import org.ligi.passandroid.reader.AppleStylePassReader
@@ -15,12 +20,23 @@ import org.ligi.passandroid.reader.PassReader
 import java.io.File
 import java.util.*
 
-class AndroidFileSystemPassStore(private val context: Context, settings: Settings, private val moshi: Moshi, private val bus: EventBus) : PassStore {
+object PassStoreUpdateEvent
+
+class AndroidFileSystemPassStore(
+        private val context: Context,
+        settings: Settings,
+        private val moshi: Moshi
+) : PassStore, KoinComponent {
+
+    override val updateChannel = ConflatedBroadcastChannel<PassStoreUpdateEvent>()
+
     private val path: File = settings.getPassesDir()
 
     override val passMap = HashMap<String, Pass>()
 
     override var currentPass: Pass? = null
+
+    private val tracker: Tracker by inject()
 
     override val classifier: PassClassifier by lazy {
         val classificationFile = File(settings.getStateDir(), "classifier_state.json")
@@ -36,11 +52,11 @@ class AndroidFileSystemPassStore(private val context: Context, settings: Setting
             pathForID.mkdirs()
         }
 
-        val buffer = Okio.buffer(Okio.sink(File(pathForID, "main.json")))
+        val buffer = File(pathForID, "main.json").sink().buffer()
 
         if (BuildConfig.DEBUG) {
             val of = com.squareup.moshi.JsonWriter.of(buffer)
-            of.setIndent("  ")
+            of.indent = "  "
             jsonAdapter.toJson(of, pass as PassImpl)
             buffer.close()
             of.close()
@@ -67,9 +83,9 @@ class AndroidFileSystemPassStore(private val context: Context, settings: Setting
             val jsonAdapter = moshi.adapter(PassImpl::class.java)
             dirty = false
             try {
-                result = jsonAdapter.fromJson(Okio.buffer(Okio.source(file)))
+                result = jsonAdapter.fromJson(file.source().buffer())
             } catch (ignored: JsonDataException) {
-                App.tracker.trackException("invalid main.json", false)
+                tracker.trackException("invalid main.json", false)
             }
         }
 
@@ -79,14 +95,14 @@ class AndroidFileSystemPassStore(private val context: Context, settings: Setting
         }
 
         if (result == null && File(pathForID, "pass.json").exists()) {
-            result = AppleStylePassReader.read(pathForID, language, context)
+            result = AppleStylePassReader.read(pathForID, language, context, tracker)
         }
 
         if (result != null) {
             if (dirty) {
                 save(result)
             }
-            passMap.put(id, result)
+            passMap[id] = result
             notifyChange()
         }
 
@@ -112,7 +128,9 @@ class AndroidFileSystemPassStore(private val context: Context, settings: Setting
     }
 
     override fun notifyChange() {
-        bus.post(PassStoreChangeEvent)
+        GlobalScope.launch {
+            updateChannel.send(PassStoreUpdateEvent)
+        }
     }
 
     override fun syncPassStoreWithClassifier(defaultTopic: String) {

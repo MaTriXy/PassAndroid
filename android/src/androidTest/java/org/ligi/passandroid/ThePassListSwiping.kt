@@ -1,18 +1,19 @@
 package org.ligi.passandroid
 
-import android.support.test.espresso.Espresso.onView
-import android.support.test.espresso.action.ViewActions.click
-import android.support.test.espresso.action.ViewActions.typeText
-import android.support.test.espresso.assertion.ViewAssertions.matches
-import android.support.test.espresso.matcher.ViewMatchers.*
-import android.support.v7.widget.helper.ItemTouchHelper
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import org.ligi.passandroid.App.Companion.passStore
 import org.ligi.passandroid.ui.PassListActivity
 import org.ligi.passandroid.ui.PassListFragment
 import org.ligi.trulesk.TruleskIntentRule
+
+const val CUSTOM_PROBE = "FOO_PROBE"
 
 class ThePassListSwiping {
 
@@ -27,7 +28,7 @@ class ThePassListSwiping {
 
         onView(withText(R.string.topic_trash)).perform(click())
 
-        assertThat(passStore.classifier.getTopics()).containsExactly(rule.activity.getString(R.string.topic_trash))
+        assertThat(TestApp.passStore.classifier.getTopics()).containsExactly(rule.activity.getString(R.string.topic_trash))
     }
 
 
@@ -37,20 +38,19 @@ class ThePassListSwiping {
 
         onView(withText(R.string.topic_archive)).perform(click())
 
-        assertThat(passStore.classifier.getTopics()).containsExactly(rule.activity.getString(R.string.topic_archive))
+        assertThat(TestApp.passStore.classifier.getTopics()).containsExactly(rule.activity.getString(R.string.topic_archive))
     }
 
     @Test
     fun testWeCanMoveToCustom() {
-        val CUSTOM_PROBE = "FOO_PROBE"
 
         fakeSwipeLeft()
 
-        onView(withId(R.id.new_topic_edit)).perform(typeText(CUSTOM_PROBE))
+        onView(withId(R.id.new_topic_edit)).perform(replaceText(CUSTOM_PROBE))
 
         onView(withText(android.R.string.ok)).perform(click())
 
-        assertThat(passStore.classifier.getTopics()).containsExactly(CUSTOM_PROBE)
+        assertThat(TestApp.passStore.classifier.getTopics()).containsExactly(CUSTOM_PROBE)
     }
 
 

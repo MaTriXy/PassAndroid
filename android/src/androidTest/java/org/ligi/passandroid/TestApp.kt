@@ -1,10 +1,7 @@
 package org.ligi.passandroid
 
-import com.github.salomonbrys.kodein.Kodein
-import com.github.salomonbrys.kodein.bind
-import com.github.salomonbrys.kodein.instance
-import com.github.salomonbrys.kodein.singleton
-import org.greenrobot.eventbus.EventBus
+import org.koin.core.module.Module
+import org.koin.dsl.module
 import org.ligi.passandroid.injections.FixedPassListPassStore
 import org.ligi.passandroid.model.PassStore
 import org.ligi.passandroid.model.Settings
@@ -20,28 +17,24 @@ import java.util.*
 
 class TestApp : App() {
 
-    override fun createKodein() = Kodein.Module {
-        bind<PassStore>() with singleton {
-            FixedPassListPassStore(emptyList())
-        }
-        bind<Settings>() with singleton {
-            mock(Settings::class.java).apply {
-                `when`(getSortOrder()).thenReturn(PassSortOrder.DATE_ASC)
-                `when`(getPassesDir()).thenReturn(File(""))
-                `when`(doTraceDroidEmailSend()).thenReturn(false)
-            }
-        }
-        bind<Tracker>(overrides = true) with singleton { mock(Tracker::class.java) }
-        bind<EventBus>() with singleton { mock(EventBus::class.java) }
-    }
+    override fun createKoin(): Module {
 
-    override fun installLeakCanary() = Unit
+        return module {
+            single { passStore as PassStore }
+            single { settings }
+            single { tracker }
+        }
+    }
 
     companion object {
 
-
-        fun passStore(): PassStore = kodein.instance()
-        fun settings(): Settings = kodein.instance()
+        val tracker = mock(Tracker::class.java)
+        val passStore = FixedPassListPassStore(emptyList())
+        val settings = mock(Settings::class.java).apply {
+            `when`(getSortOrder()).thenReturn(PassSortOrder.DATE_ASC)
+            `when`(getPassesDir()).thenReturn(File(""))
+            `when`(doTraceDroidEmailSend()).thenReturn(false)
+        }
 
         fun populatePassStoreWithSinglePass() {
 
@@ -53,13 +46,13 @@ class TestApp : App() {
 
             fixedPassListPassStore().setList(passList)
 
-            passStore().classifier.moveToTopic(pass, "test")
+            passStore.classifier.moveToTopic(pass, "test")
         }
 
         fun emptyPassStore() {
             fixedPassListPassStore().setList(emptyList())
         }
 
-        fun fixedPassListPassStore() = passStore() as FixedPassListPassStore
+        private fun fixedPassListPassStore() = passStore as FixedPassListPassStore
     }
 }

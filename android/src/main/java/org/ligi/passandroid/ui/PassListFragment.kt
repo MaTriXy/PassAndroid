@@ -1,25 +1,23 @@
 package org.ligi.passandroid.ui
 
 import android.os.Bundle
-import android.support.annotation.VisibleForTesting
-import android.support.v4.app.Fragment
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
-import android.support.v7.widget.helper.ItemTouchHelper.*
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.github.salomonbrys.kodein.instance
-import kotlinx.android.synthetic.main.pass_recycler.view.*
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
-import org.ligi.passandroid.App
+import androidx.annotation.VisibleForTesting
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.ItemTouchHelper.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import org.ligi.passandroid.R
-import org.ligi.passandroid.events.PassStoreChangeEvent
-import org.ligi.passandroid.events.ScanFinishedEvent
+import org.ligi.passandroid.databinding.PassRecyclerBinding
 import org.ligi.passandroid.functions.moveWithUndoSnackbar
 import org.ligi.passandroid.model.PassStore
 import org.ligi.passandroid.model.PassStoreProjection
@@ -27,39 +25,42 @@ import org.ligi.passandroid.model.Settings
 
 class PassListFragment : Fragment() {
 
-
     private lateinit var passStoreProjection: PassStoreProjection
     private lateinit var adapter: PassAdapter
 
-    val passStore: PassStore = App.kodein.instance()
-    val settings: Settings = App.kodein.instance()
-    val bus: EventBus = App.kodein.instance()
+    val passStore: PassStore by inject()
+    val settings: Settings by inject()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val inflate = inflater.inflate(R.layout.pass_recycler, container, false)
+        val inflate = PassRecyclerBinding.inflate(layoutInflater, container, false)
 
-        passStoreProjection = PassStoreProjection(passStore, arguments.getString(BUNDLE_KEY_TOPIC)!!, settings.getSortOrder())
+        passStoreProjection = PassStoreProjection(passStore, arguments?.getString(BUNDLE_KEY_TOPIC)!!, settings.getSortOrder())
         adapter = PassAdapter(activity as AppCompatActivity, passStoreProjection)
 
-        inflate.pass_recyclerview.adapter = adapter
+        inflate.passRecyclerview.adapter = adapter
 
-        inflate.pass_recyclerview.layoutManager = LinearLayoutManager(activity)
+        inflate.passRecyclerview.layoutManager = LinearLayoutManager(activity)
 
         val simpleItemTouchCallback = object : SimpleCallback(0, LEFT or RIGHT) {
 
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder)
+            override fun onMove(recyclerView: RecyclerView, viewHolder: ViewHolder, target: ViewHolder)
                     = false
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, swipeDir: Int) {
+            override fun onSwiped(viewHolder: ViewHolder, swipeDir: Int) {
                 this@PassListFragment.onSwiped(viewHolder.adapterPosition, swipeDir)
             }
         }
 
         val itemTouchHelper = ItemTouchHelper(simpleItemTouchCallback)
-        itemTouchHelper.attachToRecyclerView(inflate.pass_recyclerview)
+        itemTouchHelper.attachToRecyclerView(inflate.passRecyclerview)
 
-        bus.register(this)
-        return inflate
+        lifecycleScope.launch {
+            for (update in passStore.updateChannel.openSubscription()) {
+                passStoreProjection.refresh()
+                adapter.notifyDataSetChanged()
+            }
+        }
+        return inflate.root
     }
 
     @VisibleForTesting
@@ -67,38 +68,20 @@ class PassListFragment : Fragment() {
         val pass = passStoreProjection.passList[pos]
         val nextTopic = passStore.classifier.getTopicWithOffset(pass, if (swipeDir == LEFT) -1 else 1)
 
-        if (nextTopic != null) {
-            moveWithUndoSnackbar(passStore.classifier, pass, nextTopic, activity)
-        } else {
-            MoveToNewTopicUI(activity, passStore, pass).show()
+        activity?.let {
+            if (nextTopic != null) {
+                moveWithUndoSnackbar(passStore.classifier, pass, nextTopic, it)
+            } else {
+                MoveToNewTopicUI(it, passStore, pass).show()
+            }
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        bus.unregister(this)
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onPassStoreChangeEvent(passStoreChangeEvent: PassStoreChangeEvent) {
-        passStoreProjection.refresh()
-        adapter.notifyDataSetChanged()
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onScanFinishedEvent(scanFinishedEvent: ScanFinishedEvent) {
-        passStoreProjection.refresh()
-        adapter.notifyDataSetChanged()
-
-    }
-
     companion object {
-
-        private val BUNDLE_KEY_TOPIC = "topic"
+        private const val BUNDLE_KEY_TOPIC = "topic"
 
         fun newInstance(topic: String) = PassListFragment().apply {
-            arguments = Bundle()
-            arguments.putString(BUNDLE_KEY_TOPIC, topic)
+            arguments = bundleOf(BUNDLE_KEY_TOPIC to topic)
         }
     }
 

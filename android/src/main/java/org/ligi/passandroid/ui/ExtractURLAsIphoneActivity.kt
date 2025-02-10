@@ -2,9 +2,9 @@ package org.ligi.passandroid.ui
 
 import android.app.ProgressDialog
 import android.content.Intent
-import android.net.Uri
 import android.os.AsyncTask
 import android.os.Bundle
+import androidx.core.net.toUri
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.ligi.kaxt.dismissIfShowing
@@ -22,10 +22,12 @@ class ExtractURLAsIphoneActivity : PassAndroidActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        progressDialog.show()
-        tracker.trackEvent("quirk_fix", "unpack_attempt", intent.data.host, null)
+        if (intent?.data != null) {
+            progressDialog.show()
+            tracker.trackEvent("quirk_fix", "unpack_attempt", intent?.data?.host, null)
 
-        DownloadExtractAndStartImportTask().execute()
+            DownloadExtractAndStartImportTask().execute()
+        }
     }
 
     private inner class DownloadExtractAndStartImportTask : AsyncTask<Void, Void, String>() {
@@ -34,7 +36,7 @@ class ExtractURLAsIphoneActivity : PassAndroidActivity() {
 
             val client = OkHttpClient()
             try {
-                val requestBuilder = Request.Builder().url(URI(intent.data.toString()).toURL())
+                val requestBuilder = Request.Builder().url(URI(intent?.data.toString()).toURL())
                 requestBuilder.header("User-Agent", IPHONE_USER_AGENT)
 
                 val body = client.newCall(requestBuilder.build()).execute().body()
@@ -46,7 +48,7 @@ class ExtractURLAsIphoneActivity : PassAndroidActivity() {
                     val url = extractURL(bodyString) ?: return null
 
                     if (!url.startsWith("http")) {
-                        return intent.data.scheme + "://" + intent.data.host + "/" + url
+                        return intent?.data?.scheme + "://" + intent?.data?.host + "/" + url
                     }
 
                     return url
@@ -79,10 +81,10 @@ class ExtractURLAsIphoneActivity : PassAndroidActivity() {
                 return
             }
 
-            tracker.trackEvent("quirk_fix", "unpack_success", intent.data.host, null)
+            tracker.trackEvent("quirk_fix", "unpack_success", intent?.data?.host, null)
 
             val intent = Intent(this@ExtractURLAsIphoneActivity, PassImportActivity::class.java)
-            intent.data = Uri.parse(s)
+            intent.data = s.toUri()
 
             startActivity(intent)
             tearDown()

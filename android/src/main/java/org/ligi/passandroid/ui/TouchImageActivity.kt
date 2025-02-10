@@ -1,16 +1,15 @@
 package org.ligi.passandroid.ui
 
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.MenuItem
-import com.github.salomonbrys.kodein.instance
+import androidx.appcompat.app.AppCompatActivity
 import com.ortiz.touch.TouchImageView
-import org.ligi.passandroid.App
+import org.koin.android.ext.android.inject
 import org.ligi.passandroid.model.PassStore
 
 class TouchImageActivity : AppCompatActivity() {
 
-    val passStore: PassStore = App.kodein.instance()
+    val passStore: PassStore by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,7 +18,9 @@ class TouchImageActivity : AppCompatActivity() {
 
         setContentView(touchImageView)
 
-        val bitmap = passStore.currentPass?.getBitmap(passStore, intent.getStringExtra("IMAGE"))
+        val bitmap = intent.getStringExtra("IMAGE")?.let { image_from_extra ->
+            passStore.currentPass?.getBitmap(passStore, image_from_extra)
+        }
 
         if (bitmap == null) {
             finish()

@@ -1,16 +1,14 @@
 package org.ligi.passandroid.ui.edit.dialogs
 
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import org.greenrobot.eventbus.EventBus
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import org.ligi.kaxt.inflate
 import org.ligi.passandroid.R
-import org.ligi.passandroid.events.PassRefreshEvent
 import org.ligi.passandroid.model.pass.BarCode
 import org.ligi.passandroid.model.pass.Pass
 import org.ligi.passandroid.ui.edit.BarcodeEditController
 
-fun showBarcodeEditDialog(context: AppCompatActivity, bus: EventBus, pass: Pass, barCode: BarCode) {
+fun showBarcodeEditDialog(context: AppCompatActivity, refreshCallback: () -> Unit, pass: Pass, barCode: BarCode) {
     val view = context.inflate(R.layout.barcode_edit)
 
     val barcodeEditController = BarcodeEditController(view, context, barCode)
@@ -20,7 +18,7 @@ fun showBarcodeEditDialog(context: AppCompatActivity, bus: EventBus, pass: Pass,
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 pass.barCode = barcodeEditController.getBarCode()
-                bus.post(PassRefreshEvent(pass))
+                refreshCallback.invoke()
             }
             .show()
 }

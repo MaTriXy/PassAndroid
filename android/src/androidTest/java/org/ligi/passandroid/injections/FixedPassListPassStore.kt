@@ -1,7 +1,10 @@
 package org.ligi.passandroid.injections
 
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import org.ligi.passandroid.model.PassClassifier
 import org.ligi.passandroid.model.PassStore
+import org.ligi.passandroid.model.PassStoreUpdateEvent
 import org.ligi.passandroid.model.pass.Pass
 import java.io.File
 
@@ -10,7 +13,7 @@ class FixedPassListPassStore(private var passes: List<Pass>) : PassStore {
     override lateinit var classifier: PassClassifier
 
     init {
-        classifier = PassClassifier(HashMap<String, String>(), this)
+        classifier = PassClassifier(HashMap(), this)
     }
 
     fun setList(newPasses: List<Pass>, newCurrentPass: Pass? = newPasses.firstOrNull()) {
@@ -19,7 +22,7 @@ class FixedPassListPassStore(private var passes: List<Pass>) : PassStore {
         passMap.clear()
         passMap.putAll(createHashMap())
 
-        classifier = PassClassifier(HashMap<String, String>(), this)
+        classifier = PassClassifier(HashMap(), this)
     }
 
     override var currentPass: Pass? = null
@@ -31,7 +34,7 @@ class FixedPassListPassStore(private var passes: List<Pass>) : PassStore {
     private fun createHashMap(): HashMap<String, Pass> {
         val hashMap = HashMap<String, Pass>()
 
-        passes.forEach { hashMap.put(it.id, it) }
+        passes.forEach { hashMap[it.id] = it }
         return hashMap
     }
 
@@ -47,6 +50,8 @@ class FixedPassListPassStore(private var passes: List<Pass>) : PassStore {
     override fun getPathForID(id: String): File {
         return File("")
     }
+
+    override val updateChannel: BroadcastChannel<PassStoreUpdateEvent> = ConflatedBroadcastChannel()
 
     override fun save(pass: Pass) {
         // no effect in this impl

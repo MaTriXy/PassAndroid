@@ -1,22 +1,26 @@
 buildscript {
     ext {
-        support_version = '25.3.1'
-        kotlin_version = '1.2.41'
-        mockito_version = '2.9.0'
-        play_version = '10.0.1'
+        kotlin_version = '1.9.0'
+	// wait for upstream https://github.com/mockito/mockito/issues/2007
+        mockito_version = '3.4.6'
+        threetenbp_version = '1.6.8'
+        kotpref_version = '2.13.2'
     }
 
     repositories {
-        jcenter()
-        maven { url 'https://jitpack.io' }
+        google()
+        mavenCentral()
+        maven { url 'https://www.jitpack.io' }
+        gradlePluginPortal()
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.android.tools.build:gradle:2.3.3'
-        classpath 'com.stanfy.spoon:spoon-gradle-plugin:1.2.2'
-        classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
-        classpath 'de.mobilej.unmock:UnMockPlugin:0.6.4'
-        classpath 'com.github.triplet.gradle:play-publisher:1.1.5'
+        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'com.trevjonez.composer:plugin:1.0.0-rc08'
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.47.0'
+        classpath 'com.github.bjoernq:unmockplugin:0.7.9'
     }
 }
+
+apply from: 'https://raw.githubusercontent.com/ligi/gradle-common/master/versions_plugin_stable_only.gradle'

@@ -1,15 +1,20 @@
-package org.ligi.passandroid.ui
+package org.ligi.passandroid.scan
 
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.support.v4.app.NotificationCompat
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.graphics.scale
 import org.ligi.passandroid.R
 import org.ligi.passandroid.model.PassBitmapDefinitions
 import org.ligi.passandroid.model.PassStore
 import org.ligi.passandroid.model.pass.Pass
+import org.ligi.passandroid.ui.PassViewActivity
+import org.ligi.passandroid.ui.PassViewActivityBase
+import org.ligi.passandroid.ui.UnzipPassController
 import org.threeten.bp.ZonedDateTime
 import java.io.File
 
@@ -41,14 +46,17 @@ internal class SearchSuccessCallback(private val context: Context, private val p
 
             val intent = Intent(context, PassViewActivity::class.java)
             intent.putExtra(PassViewActivityBase.EXTRA_KEY_UUID, uuid)
-            findNotificationBuilder.setContentIntent(PendingIntent.getActivity(context, SearchPassesIntentService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT))
+
+            val intentFlags =  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
+
+            findNotificationBuilder.setContentIntent(PendingIntent.getActivity(context, SearchPassesIntentService.REQUEST_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT or intentFlags))
             notifyManager.notify(SearchPassesIntentService.FOUND_NOTIFICATION_ID, findNotificationBuilder.build())
         }
     }
 
     private fun scale2maxSize(bitmap: Bitmap, dimensionPixelSize: Int): Bitmap {
         val scale = dimensionPixelSize.toFloat() / if (bitmap.width > bitmap.height) bitmap.width else bitmap.height
-        return Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), false)
+        return bitmap.scale((bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), filter = false)
     }
 
     private fun getInitialTopic(pass: Pass): String {

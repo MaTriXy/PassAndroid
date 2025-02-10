@@ -1,30 +1,26 @@
 apply plugin: 'com.android.application'
-apply plugin: 'spoon'
+apply plugin: 'com.trevjonez.composer'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'de.mobilej.unmock'
-apply plugin: 'com.github.ben-manes.versions'
-apply plugin: 'com.github.triplet.play'
 
 repositories {
-    jcenter()
-    mavenLocal()
-    maven { url 'https://jitpack.io' }
-    maven { url 'https://maven.google.com' }
+    mavenCentral()
+    google()
+    maven { url 'https://www.jitpack.io' }
 }
 
 android {
 
-    compileSdkVersion 25
-    buildToolsVersion "25.0.3"
+    compileSdkVersion 35
 
     defaultConfig {
-        versionCode 346
-        versionName "3.4.6"
-        minSdkVersion 9
-        targetSdkVersion 25
+        versionCode 373
+        versionName "3.7.3"
+        minSdkVersion 23
+        targetSdkVersion 33
         applicationId "org.ligi.passandroid"
+        namespace "org.ligi.passandroid"
         testInstrumentationRunner "org.ligi.passandroid.AppReplacingRunner"
         archivesBaseName = "PassAndroid-$versionName"
         vectorDrawables.useSupportLibrary = true
@@ -62,6 +58,7 @@ android {
         }
 
     }
+
     android.variantFilter { variant ->
         def maps = variant.getFlavors().get(0).name
         def analytics = variant.getFlavors().get(1).name
@@ -85,12 +82,14 @@ android {
 
         exclude 'META-INF/maven/com.google.guava/guava/pom.properties'
         exclude 'META-INF/maven/com.google.guava/guava/pom.xml'
-
+        exclude 'META-INF/lib_release.kotlin_module'
     }
 
     lintOptions {
         warning 'MissingTranslation'
         warning 'InvalidPackage'
+        disable "NullSafeMutableLiveData"
+	baseline file("lint-baseline.xml")
     }
 
     buildTypes {
@@ -99,101 +98,110 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
         }
+
+        debug {
+            multiDexEnabled true
+        }
     }
-}
 
-configurations {
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
 
-    // http://stackoverflow.com/questions/30578243/why-would-adding-espresso-contrib-cause-an-inflateexception
-    androidTestCompile.exclude group: 'com.android.support', module: 'appcompat-v7'
-    androidTestCompile.exclude group: 'com.android.support', module: 'design'
-    androidTestCompile.exclude group: 'com.android.support', module: 'support-v4'
-    androidTestCompile.exclude group: 'com.android.support', module: 'support-annotations'
-    androidTestCompile.exclude group: 'com.android.support', module: 'preference-v7'
-    androidTestCompile.exclude module: 'recyclerview-v7'
-    androidTestCompile.exclude module: 'kotlin-stdlib'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+    namespace 'org.ligi.passandroid'
 }
 
 dependencies {
-    compile 'com.github.hotchemi:permissionsdispatcher:2.3.2'
-    kapt 'com.github.hotchemi:permissionsdispatcher-processor:2.3.2'
+    implementation 'com.github.permissions-dispatcher:permissionsdispatcher-ktx:4.8.0'
 
-    compile 'com.github.salomonbrys.kodein:kodein:4.1.0'
+    implementation "io.insert-koin:koin-android:3.4.2"
 
-    provided 'org.glassfish:javax.annotation:10.0-b28'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.2"
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
 
-    androidTestCompile 'com.github.ligi:trulesk:0.21'
+    androidTestImplementation 'com.github.ligi:trulesk:4.3'
+    androidTestImplementation 'com.jraska:falcon:2.2.0'
 
-    androidTestCompile 'com.android.support.test.espresso:espresso-contrib:3.0.1'
+    androidTestImplementation 'com.linkedin.testbutler:test-butler-library:2.2.1'
+    androidTestUtil 'com.linkedin.testbutler:test-butler-app:2.2.1'
 
-    androidTestCompile 'com.squareup.assertj:assertj-android:1.1.1'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-contrib:3.6.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-intents:3.5.1'
+    androidTestImplementation 'com.squareup.assertj:assertj-android:1.2.0'
+    androidTestImplementation "org.mockito:mockito-core:$mockito_version"
+    androidTestImplementation 'com.linkedin.dexmaker:dexmaker-mockito:2.28.4'
+    androidTestImplementation 'com.google.code.findbugs:jsr305:3.0.2'
+    androidTestImplementation "org.threeten:threetenbp:$threetenbp_version"
+    androidTestImplementation 'com.android.support:multidex:1.0.3'
 
-    androidTestCompile "org.mockito:mockito-core:$mockito_version"
-    androidTestCompile 'com.linkedin.dexmaker:dexmaker-mockito:2.2.0'
 
-    androidTestCompile 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'com.github.ligi:TouchImageView:2.1'
+    implementation 'com.github.ligi:ExtraCompats:1.0'
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.6'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    androidTestCompile "com.android.support:appcompat-v7:$support_version"
-    androidTestCompile "com.android.support:design:$support_version"
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.annotation:annotation:1.9.1'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.fragment:fragment-ktx:1.6.0'
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'net.i2p.android.ext:floatingactionbutton:1.10.1'
 
-    compile 'com.github.ligi:TouchImageView:2.1'
-    compile 'com.github.ligi:ExtraCompats:0.4'
+    implementation 'com.github.ligi:KAXT:1.0'
+    implementation 'com.github.ligi:KAXTUI:1.0'
+    implementation 'com.github.ligi:loadtoast:1.10.11'
 
-    compile 'net.lingala.zip4j:zip4j:1.3.2'
-    compile 'com.jakewharton.threetenabp:threetenabp:1.1.0'
-    compile 'org.greenrobot:eventbus:3.0.0'
+    implementation 'com.github.ligi:tracedroid:4.1'
+    implementation 'com.jakewharton.timber:timber:5.0.1'
 
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    forPlayImplementation 'com.github.ligi.snackengage:snackengage-playrate:0.30'
+    forFDroidImplementation 'com.github.ligi.snackengage:snackengage-playrate:0.30'
+    forAmazonImplementation 'com.github.ligi.snackengage:snackengage-amazonrate:0.30'
 
-    compile "com.android.support:support-annotations:$support_version"
-    compile "com.android.support:recyclerview-v7:$support_version"
-    compile "com.android.support:appcompat-v7:$support_version"
-    compile "com.android.support:cardview-v7:$support_version"
-    compile "com.android.support:design:$support_version"
-    compile "com.android.support:preference-v7:$support_version"
+    // https://medium.com/square-corner-blog/okhttp-3-13-requires-android-5-818bb78d07ce
+    // Don't update to >=3.13 before minSDK 21 + Java 8
+    //noinspection GradleDependency
+    implementation 'com.squareup.okhttp3:okhttp:3.12.12'
 
-    compile 'net.i2p.android.ext:floatingactionbutton:1.10.1'
+    implementation 'com.larswerkman:HoloColorPicker:1.5'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
 
-    compile 'com.github.ligi:KAXT:0.19'
-    compile 'com.github.ligi:KAXTUI:0.4'
-    compile 'com.github.ligi:loadtoast:1.10.11'
-    compile 'com.github.ligi:tracedroid:1.4'
+    implementation 'com.squareup.okio:okio:3.6.0'
 
-    forPlayCompile 'com.github.ligi.snackengage:snackengage-playrate:0.15'
-    forFDroidCompile 'com.github.ligi.snackengage:snackengage-playrate:0.15'
-    forAmazonCompile 'com.github.ligi.snackengage:snackengage-amazonrate:0.15'
+    implementation 'com.squareup.moshi:moshi:1.15.0'
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:1.15.0"
 
-    compile 'com.squareup.okhttp3:okhttp:3.9.1'
-    compile 'com.larswerkman:HoloColorPicker:1.5'
-    compile 'com.google.code.findbugs:jsr305:3.0.2'
-    compile 'com.squareup.moshi:moshi:1.4.0'
-
-    compile "com.chibatching.kotpref:kotpref:2.5.0"
-    compile "com.chibatching.kotpref:initializer:2.5.0"
-
-    testCompile "com.android.support:support-annotations:$support_version"
-    testCompile 'com.squareup.assertj:assertj-android:1.1.1'
-    testCompile 'junit:junit:4.12'
-    testCompile "org.mockito:mockito-core:${mockito_version}"
-    testCompile 'org.threeten:threetenbp:1.3.6'
+    implementation "com.chibatching.kotpref:kotpref:$kotpref_version"
+    implementation "com.chibatching.kotpref:initializer:$kotpref_version"
+    testImplementation 'com.squareup.assertj:assertj-android:1.2.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.mockito:mockito-core:$mockito_version"
+    testImplementation "org.threeten:threetenbp:$threetenbp_version"
 
     // https://github.com/ligi/PassAndroid/issues/181
-    // Don't update to 3.3.1 before minSDK 19 - or replace zxing
-    compile 'com.google.zxing:core:3.3.0'
+    // Don't upgrade before minSDK 19 - or replace zxing
+    //noinspection GradleDependency
+    implementation 'com.google.zxing:core:3.3.0'
 
-    debugCompile 'com.squareup.leakcanary:leakcanary-android:1.4'
-    releaseCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.4'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
 
-    withAnalyticsCompile "com.google.android.gms:play-services-analytics:$play_version"
-    withMapsCompile "com.google.android.gms:play-services-maps:$play_version"
-}
-
-spoon {
-    debug = true
-    grantAllPermissions = true
-}
-
-play {
-    jsonFile = file('/media/ligi/USBCRED/play.json')
-    uploadImages = true
+    // requires minSDK 16 according to docs, not sure if it causes an issue
+    withAnalyticsImplementation 'com.google.android.gms:play-services-analytics:18.0.2'
+    withMapsImplementation 'com.google.android.gms:play-services-maps:17.0.0'
 }

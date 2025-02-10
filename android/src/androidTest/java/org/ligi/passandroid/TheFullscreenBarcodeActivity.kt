@@ -2,11 +2,12 @@ package org.ligi.passandroid
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.support.test.espresso.Espresso.onView
-import android.support.test.espresso.assertion.ViewAssertions.matches
-import android.support.test.espresso.matcher.ViewMatchers.isDisplayed
-import android.support.test.espresso.matcher.ViewMatchers.withId
 import android.widget.ImageView
+import androidx.core.graphics.scale
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -19,9 +20,9 @@ import org.ligi.passandroid.ui.FullscreenBarcodeActivity
 import org.ligi.trulesk.TruleskIntentRule
 import java.util.*
 
-class TheFullscreenBarcodeActivity {
+private const val BARCODE_MESSAGE = "2323"
 
-    private val BARCODE_MESSAGE = "2323"
+class TheFullscreenBarcodeActivity {
 
     @get:Rule
     var rule = TruleskIntentRule(FullscreenBarcodeActivity::class.java, false)
@@ -68,7 +69,7 @@ class TheFullscreenBarcodeActivity {
         val pass = PassImpl(UUID.randomUUID().toString())
         pass.barCode = BarCode(format, BARCODE_MESSAGE)
 
-        TestApp.passStore().currentPass = pass
+        TestApp.passStore.currentPass = pass
 
         rule.launchActivity(null)
         onView(withId(R.id.fullscreen_barcode)).check(matches(isDisplayed()))
@@ -77,12 +78,11 @@ class TheFullscreenBarcodeActivity {
         val bitmapDrawable = viewById.drawable as BitmapDrawable
         val bitmap = bitmapDrawable.bitmap
 
-        val bitmapToTest: Bitmap
-        if (format === PassBarCodeFormat.AZTEC) {
+        val bitmapToTest: Bitmap = if (format === AZTEC) {
             // not sure why - but for the decoder to pick up AZTEC it must have moar pixelz - smells like a zxing bug
-            bitmapToTest = Bitmap.createScaledBitmap(bitmap, bitmap.width * 2, bitmap.height * 2, false)
+            bitmap.scale(bitmap.width * 2, bitmap.height * 2, filter = false)
         } else {
-            bitmapToTest = bitmap
+            bitmap
         }
 
         assertThat(bitmapToTest.decodeBarCode()).isEqualTo(BARCODE_MESSAGE)

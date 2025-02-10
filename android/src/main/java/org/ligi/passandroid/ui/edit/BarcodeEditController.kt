@@ -1,33 +1,38 @@
 package org.ligi.passandroid.ui.edit
 
 import android.content.Intent
-import android.support.v4.app.Fragment
-import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.RadioButton
-import kotlinx.android.synthetic.main.barcode_edit.view.*
+import android.widget.RadioGroup
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatEditText
+import androidx.appcompat.widget.AppCompatImageButton
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import org.ligi.kaxt.doAfterEdit
+import org.ligi.passandroid.R
 import org.ligi.passandroid.model.pass.BarCode
 import org.ligi.passandroid.model.pass.PassBarCodeFormat
-import org.ligi.passandroid.model.pass.PassBarCodeFormat.EAN_13
-import org.ligi.passandroid.model.pass.PassBarCodeFormat.QR_CODE
+import org.ligi.passandroid.model.pass.PassBarCodeFormat.*
 import org.ligi.passandroid.ui.BarcodeUIController
 import org.ligi.passandroid.ui.PassViewHelper
 import java.util.*
 
-class BarcodeEditController(val rootView: View, internal val context: AppCompatActivity, barCode: BarCode) {
-
-    var barcodeFormat: PassBarCodeFormat?
-
-    internal val intentFragment: Fragment
+class BarcodeEditController(private val rootView: View, internal val context: AppCompatActivity, barCode: BarCode) {
+    private var alternativeMessageInput: AppCompatEditText
+    private var messageInput: AppCompatEditText
+    private var barcodeFormat: PassBarCodeFormat?
+    private val intentFragment: Fragment
+    private val passFormatRadioButtons: MutableMap<PassBarCodeFormat, RadioButton> = EnumMap(PassBarCodeFormat::class.java)
 
     class IntentFragment : Fragment() {
-
-        var scanCallback: (String) -> Unit = {}
+        var scanCallback: (format: String, result: String) -> Unit = { _, _ -> }
 
         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-            if (data != null && data.hasExtra("SCAN_RESULT")) {
-                scanCallback(data.getStringExtra("SCAN_RESULT"))
+            data?.let { dataNotNull ->
+                val scanResultFormat = dataNotNull.getStringExtra("SCAN_RESULT_FORMAT") ?: return
+                val scanResult = dataNotNull.getStringExtra("SCAN_RESULT") ?: return
+                scanCallback(scanResultFormat, scanResult)
             }
         }
     }
@@ -35,10 +40,11 @@ class BarcodeEditController(val rootView: View, internal val context: AppCompatA
     private fun bindRadio(formats: Array<PassBarCodeFormat>) {
         formats.forEach {
             val radioButton = RadioButton(context)
-            rootView.barcodeRadioGroup.addView(radioButton)
+            rootView.findViewById<RadioGroup>(R.id.barcodeRadioGroup).addView(radioButton)
+            passFormatRadioButtons[it] = radioButton
 
             radioButton.text = it.name
-            radioButton.setOnCheckedChangeListener { buttonView, isChecked ->
+            radioButton.setOnCheckedChangeListener { _, isChecked ->
                 if (isChecked) {
                     barcodeFormat = it
                     refresh()
@@ -54,40 +60,40 @@ class BarcodeEditController(val rootView: View, internal val context: AppCompatA
         intentFragment = IntentFragment()
         barcodeFormat = barCode.format
 
-        rootView.randomButton.setOnClickListener({
-            rootView.messageInput.setText(when (barcodeFormat) {
+
+        messageInput =rootView.findViewById(R.id.messageInput)
+        alternativeMessageInput =rootView.findViewById(R.id.alternativeMessageInput)
+
+        rootView.findViewById<AppCompatImageButton>(R.id.randomButton).setOnClickListener {
+            messageInput.setText(when (barcodeFormat) {
+                EAN_8 -> getRandomEAN8()
                 EAN_13 -> getRandomEAN13()
-                PassBarCodeFormat.ITF -> getRandomITF()
-                else -> UUID.randomUUID().toString().toUpperCase()
+                ITF -> getRandomITF()
+                else -> UUID.randomUUID().toString().uppercase(Locale.ROOT)
             })
             refresh()
-        })
+        }
 
-        rootView.scanButton.setOnClickListener({
+        rootView.findViewById<View>(R.id.scanButton).setOnClickListener {
             val barCodeIntentIntegrator = BarCodeIntentIntegrator(intentFragment)
+            barCodeIntentIntegrator.initiateScan(PassBarCodeFormat.values().map { it.name })
+        }
 
-            if (barcodeFormat == QR_CODE) {
-                barCodeIntentIntegrator.initiateScan(BarCodeIntentIntegrator.QR_CODE_TYPES)
-            } else {
-                barCodeIntentIntegrator.initiateScan(setOf(barcodeFormat!!.name))
-            }
-
-        })
-
-        intentFragment.scanCallback = { newMessage ->
-            rootView.messageInput.setText(newMessage)
+        intentFragment.scanCallback = { newFormat, newMessage ->
+            messageInput.setText(newMessage)
+            rootView.findViewById<RadioGroup>(R.id.barcodeRadioGroup).check(passFormatRadioButtons[PassBarCodeFormat.valueOf(newFormat)]!!.id)
             refresh()
         }
-        context.supportFragmentManager.beginTransaction().add(intentFragment, "intent_fragment").commit()
+        context.supportFragmentManager.commit { add(intentFragment, "intent_fragment") }
 
         bindRadio(PassBarCodeFormat.values())
 
-        rootView.messageInput.setText(barCode.message)
-        rootView.messageInput.doAfterEdit {
+        messageInput.setText(barCode.message)
+        messageInput.doAfterEdit {
             refresh()
         }
 
-        rootView.alternativeMessageInput.setText(barCode.alternativeText)
+        alternativeMessageInput.setText(barCode.alternativeText)
 
         refresh()
     }
@@ -97,15 +103,15 @@ class BarcodeEditController(val rootView: View, internal val context: AppCompatA
         val isBarcodeShown = barcodeUIController.getBarcodeView().visibility == View.VISIBLE
 
         if (!isBarcodeShown) {
-            rootView.messageInput.error = "Invalid message"
+            messageInput.error = "Invalid message"
         } else {
-            rootView.messageInput.error = null
+            messageInput.error = null
         }
     }
 
-    fun getBarCode() = BarCode(barcodeFormat, rootView.messageInput.text.toString()).apply {
-        val newAlternativeText = rootView.alternativeMessageInput.text.toString()
-        if (!newAlternativeText.isEmpty()) {
+    fun getBarCode() = BarCode(barcodeFormat, messageInput.text.toString()).apply {
+        val newAlternativeText = alternativeMessageInput.text.toString()
+        if (newAlternativeText.isNotEmpty()) {
             alternativeText = newAlternativeText
         }
     }

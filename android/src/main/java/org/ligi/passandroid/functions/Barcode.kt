@@ -3,9 +3,13 @@ package org.ligi.passandroid.functions
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import androidx.annotation.VisibleForTesting
+import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
+import com.google.zxing.common.BitMatrix
 import org.ligi.passandroid.model.pass.PassBarCodeFormat
-import org.ligi.tracedroid.logging.Log
+import timber.log.Timber
+import java.util.*
 
 
 fun generateBitmapDrawable(resources: Resources, data: String, type: PassBarCodeFormat): BitmapDrawable? {
@@ -17,6 +21,7 @@ fun generateBitmapDrawable(resources: Resources, data: String, type: PassBarCode
     }
 }
 
+@VisibleForTesting
 fun generateBarCodeBitmap(data: String, type: PassBarCodeFormat): Bitmap? {
 
     if (data.isEmpty()) {
@@ -33,31 +38,31 @@ fun generateBarCodeBitmap(data: String, type: PassBarCodeFormat): Bitmap? {
 
         // create buffered image to draw to
         // NTFS Bitmap.Config.ALPHA_8 sounds like an awesome idea - been there - done that ..
-        val barcode_image = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        val barcodeImage = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
 
         // iterate through the matrix and draw the pixels to the image
-        for (y in 0..height - 1) {
-            for (x in 0..width - 1) {
-                barcode_image.setPixel(x, y, if (matrix.get(x, if (is1D) 0 else y)) 0 else 0xFFFFFF)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                barcodeImage.setPixel(x, y, if (matrix.get(x, if (is1D) 0 else y)) 0 else 0xFFFFFF)
             }
         }
 
-        return barcode_image
+        return barcodeImage
     } catch (e: com.google.zxing.WriterException) {
-        Log.w("could not write image " + e)
+        Timber.w(e, "could not write image")
         // TODO check if we should better return some rescue Image here
         return null
     } catch (e: IllegalArgumentException) {
-        Log.w("could not write image " + e)
+        Timber.w("could not write image: $e")
         return null
     } catch (e: ArrayIndexOutOfBoundsException) {
         // happens for ITF barcode on certain inputs
-        Log.w("could not write image " + e)
+        Timber.w("could not write image: $e")
         return null
     }
 
 }
 
-fun getBitMatrix(data: String, type: PassBarCodeFormat)
-        = MultiFormatWriter().encode(data, type.zxingBarCodeFormat(), 0, 0)!!
+@VisibleForTesting
+fun getBitMatrix(data: String, type: PassBarCodeFormat) = MultiFormatWriter().encode(data, type.zxingBarCodeFormat(), 0, 0)!!
 

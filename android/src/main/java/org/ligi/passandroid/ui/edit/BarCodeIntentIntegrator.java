@@ -2,21 +2,20 @@ package org.ligi.passandroid.ui.edit;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
-import android.util.Log;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import timber.log.Timber;
 
 /**
  * <p>A utility class which helps ease integration with Barcode Scanner via {@link Intent}s. This is a simple
@@ -90,6 +89,7 @@ import java.util.Map;
  * @author Brad Drehmer
  * @author gcstang
  */
+@SuppressWarnings("WeakerAccess")
 public class BarCodeIntentIntegrator {
 
     public static final int REQUEST_CODE = 0x0000c0de; // Only use bottom 16 bits
@@ -103,6 +103,10 @@ public class BarCodeIntentIntegrator {
 
     private static final String BS_PACKAGE = "com.google.zxing.client.android";
     private static final String BSPLUS_PACKAGE = "com.srowen.bs.android";
+    private static final String BINARYEYE_PACKAGE = "de.markusfisch.android.binaryeye";
+    private static final String QR_AND_BARCODE_READER_PACKAGE = "com.teacapps.barcodescanner";
+    private static final String QR_AND_BARCODE_SCANNER_PACKAGE = "com.example.barcodescanner";
+    private static final String QRBOT_PACKAGE = "net.qrbot";
 
     // supported barcode formats
     public static final Collection<String> PRODUCT_CODE_TYPES = list("UPC_A", "UPC_E", "EAN_8", "EAN_13", "RSS_14");
@@ -116,9 +120,13 @@ public class BarCodeIntentIntegrator {
 
     public static final List<String> TARGET_BARCODE_SCANNER_ONLY = Collections.singletonList(BS_PACKAGE);
     public static final List<String> TARGET_ALL_KNOWN = list(
+            BINARYEYE_PACKAGE,          // Binary Eye
             BSPLUS_PACKAGE,             // Barcode Scanner+
             BSPLUS_PACKAGE + ".simple", // Barcode Scanner+ Simple
-            BS_PACKAGE                  // Barcode Scanner
+            BS_PACKAGE,                 // Barcode Scanner
+            QR_AND_BARCODE_READER_PACKAGE, // QR & Barcode Reader
+            QR_AND_BARCODE_SCANNER_PACKAGE, // QR & Barcode Scanner
+            QRBOT_PACKAGE              // QRbot
             // What else supports this intent?
     );
 
@@ -130,7 +138,7 @@ public class BarCodeIntentIntegrator {
     private String buttonYes;
     private String buttonNo;
     private List<String> targetApplications;
-    private final Map<String, Object> moreExtras = new HashMap<String, Object>(3);
+    private final Map<String, Object> moreExtras = new HashMap<>(3);
 
     /**
      * @param activity {@link Activity} invoking the integration
@@ -313,7 +321,7 @@ public class BarCodeIntentIntegrator {
      * @see android.app.Activity#startActivityForResult(Intent, int)
      * @see android.app.Fragment#startActivityForResult(Intent, int)
      */
-    protected void startActivityForResult(Intent intent, int code) {
+    private void startActivityForResult(Intent intent, @SuppressWarnings("SameParameterValue") int code) {
         if (fragment == null) {
             activity.startActivityForResult(intent, code);
         } else {
@@ -348,29 +356,26 @@ public class BarCodeIntentIntegrator {
         AlertDialog.Builder downloadDialog = new AlertDialog.Builder(activity);
         downloadDialog.setTitle(title);
         downloadDialog.setMessage(message);
-        downloadDialog.setPositiveButton(buttonYes, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                String packageName;
-                if (targetApplications.contains(BS_PACKAGE)) {
-                    // Prefer to suggest download of BS if it's anywhere in the list
-                    packageName = BS_PACKAGE;
+        downloadDialog.setPositiveButton(buttonYes, (dialogInterface, i) -> {
+            String packageName;
+            if (targetApplications.contains(BS_PACKAGE)) {
+                // Prefer to suggest download of BS if it's anywhere in the list
+                packageName = BS_PACKAGE;
+            } else {
+                // Otherwise, first option:
+                packageName = targetApplications.get(0);
+            }
+            Uri uri = Uri.parse("market://details?id=" + packageName);
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            try {
+                if (fragment == null) {
+                    activity.startActivity(intent);
                 } else {
-                    // Otherwise, first option:
-                    packageName = targetApplications.get(0);
+                    fragment.startActivity(intent);
                 }
-                Uri uri = Uri.parse("market://details?id=" + packageName);
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                try {
-                    if (fragment == null) {
-                        activity.startActivity(intent);
-                    } else {
-                        fragment.startActivity(intent);
-                    }
-                } catch (ActivityNotFoundException anfe) {
-                    // Hmm, market is not installed
-                    Log.w(TAG, "Google Play is not installed; cannot install " + packageName);
-                }
+            } catch (ActivityNotFoundException anfe) {
+                // Hmm, market is not installed
+                Timber.w("Google Play is not installed; cannot install " + packageName);
             }
         });
         downloadDialog.setNegativeButton(buttonNo, null);
